@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
-import { runBrandConsistencyAgent } from "@/lib/agents";
+import { runAllBrandOpsAgents } from "@/lib/agents";
 import { getDb } from "@/lib/mongodb";
 import { getBrandMemoryContext, saveBrandMemory } from "@/lib/brand-memory";
 
@@ -64,7 +64,7 @@ export async function POST(
       platform: computedPlatform,
     });
 
-    const agentResult = await runBrandConsistencyAgent({
+    const agentResults = await runAllBrandOpsAgents({
       brandName: computedBrandName,
       targetAudience: String(review.targetAudience ?? ""),
       platform: computedPlatform,
@@ -75,7 +75,7 @@ export async function POST(
       brandMemorySummary: memoryContext.summary,
     });
 
-    const agentRun = {
+    const agentRuns = agentResults.map((agentResult) => ({
       reviewId: id,
       agentName: agentResult.output.agentName,
       model: "@oi/beta",
@@ -91,9 +91,18 @@ export async function POST(
       rawOutputPreview: agentResult.rawOutputPreview.slice(0, 500),
       errorMessage: agentResult.errorMessage,
       createdAt: new Date(),
-    };
+    }));
 
-    await db.collection("agentRuns").insertOne(agentRun);
+    const agentRun =
+      agentRuns.find((run) => run.agentName === "Brand Consistency") ?? agentRuns[0];
+
+    const agentResult =
+      agentResults.find((run) => run.output.agentName === "Brand Consistency") ??
+      agentResults[0];
+
+    if (agentRuns.length > 0) {
+      await db.collection("agentRuns").insertMany(agentRuns);
+    }
 
     // Save memory after agent run completes
     const memoryScore = Number(agentResult.output.score ?? 0);
@@ -139,6 +148,7 @@ export async function POST(
       status: finalStatus,
       overallScore,
       agentRun,
+      agentRuns,
       memoryUsed: {
         used: memoryContext.used,
         count: memoryContext.count,
@@ -149,12 +159,12 @@ export async function POST(
     });
   } catch (error) {
     console.error(
-      "Run Brand Consistency agent failed",
+      "Run BrandOps agents failed",
       error instanceof Error ? error.message : "Unknown error",
     );
 
     return NextResponse.json(
-      { error: "Failed to run Brand Consistency agent", code: "RUN_AGENT_FAILED" },
+      { error: "Failed to run BrandOps agents", code: "RUN_AGENT_FAILED" },
       { status: 500 },
     );
   }

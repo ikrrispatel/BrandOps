@@ -21,32 +21,60 @@ export type BrandConsistencyRunResult = {
   errorMessage: string | null;
 };
 
-function fallbackBrandConsistencyOutput(reason: string): AgentOutput {
+export type BrandOpsAgentName =
+  | "Brand Consistency"
+  | "Accessibility"
+  | "Legal / Risk"
+  | "Visual Hierarchy"
+  | "Audience Fit";
+
+const BRANDOPS_AGENT_NAMES: BrandOpsAgentName[] = [
+  "Brand Consistency",
+  "Accessibility",
+  "Legal / Risk",
+  "Visual Hierarchy",
+  "Audience Fit",
+];
+
+const AGENT_FOCUS: Record<BrandOpsAgentName, string> = {
+  "Brand Consistency":
+    "Evaluate whether the asset matches the brand identity, tone, visual system, platform, and campaign goal.",
+  Accessibility:
+    "Evaluate readability, contrast, text legibility, visual accessibility, image clarity, and whether the creative can be understood quickly by a broad audience.",
+  "Legal / Risk":
+    "Evaluate potential brand safety, misleading claims, compliance risk, unsupported promises, unsafe language, and reputational risk. Do not provide legal advice; flag practical marketing risk.",
+  "Visual Hierarchy":
+    "Evaluate layout, spacing, typography, focal point, information hierarchy, logo placement, clutter, and whether the viewer understands the message in seconds.",
+  "Audience Fit":
+    "Evaluate whether the asset fits the target audience, platform expectations, campaign goal, message clarity, and buyer/user psychology.",
+};
+
+function fallbackAgentOutput(agentName: BrandOpsAgentName, reason: string): AgentOutput {
   return {
     __brand: "AgentOutput",
-    agentName: "Brand Consistency",
+    agentName,
     score: 70,
     confidence: 0.35,
-    summary: `Fallback result: BrandOps could not fully validate the model output. ${reason}`,
+    summary: `Fallback result: BrandOps could not fully validate the ${agentName} model output. ${reason}`,
     violations: [
       {
         title: "Manual review recommended",
         severity: "medium",
         evidence: "The model response could not be safely parsed into the required agent schema.",
         whyItMatters: "Brand review results must be structured and traceable before launch.",
-        suggestedFix: "Review the asset manually and rerun the Brand Consistency agent.",
+        suggestedFix: `Review the asset manually and rerun the ${agentName} agent.`,
       },
     ],
     suggestedFixes: [
       {
         priority: 1,
-        fix: "Rerun the agent and verify the asset against the uploaded brand guide.",
+        fix: `Rerun the ${agentName} agent and verify the asset against the uploaded brand guide.`,
         expectedImpact: "Improves reliability of the final brand compliance score.",
       },
     ],
     beforeAfter: {
       before: "Asset requires structured brand review.",
-      after: "Asset should clearly align with brand tone, visual identity, platform, and campaign goal.",
+      after: "Asset should clearly align with brand, audience, platform, and campaign goal.",
     },
   };
 }
@@ -76,11 +104,14 @@ function extractJsonObject(text: string): unknown {
   }
 }
 
-function buildBrandConsistencyPrompt(input: BrandConsistencyInput): string {
+function buildAgentPrompt(input: BrandConsistencyInput, agentName: BrandOpsAgentName): string {
   return `
-You are the Brand Consistency agent for BrandOps.
+You are the ${agentName} agent for BrandOps.
 
-Review the uploaded creative asset against the provided brand context. Evaluate whether the asset matches the brand identity, target audience, platform, and campaign goal.
+Agent focus:
+${AGENT_FOCUS[agentName]}
+
+Review the uploaded creative asset against the provided brand context.
 
 Brand Memory Vault:
 ${input.brandMemorySummary || "No prior memory found for this brand/platform."}
@@ -100,7 +131,7 @@ Return strict JSON only. No markdown. No commentary.
 
 Required JSON shape:
 {
-  "agentName": "Brand Consistency",
+  "agentName": "${agentName}",
   "score": number,
   "confidence": number,
   "summary": string,
@@ -129,20 +160,22 @@ Required JSON shape:
 Rules:
 - score must be 0-100.
 - confidence must be 0-1.
-- Be specific about visual style, copy, tone, audience fit, and platform fit.
+- Be specific and practical.
 - If the asset mostly aligns, still identify at least one improvement.
+- Keep violations relevant to the ${agentName} agent focus.
 `.trim();
 }
 
-export async function runBrandConsistencyAgent(
+export async function runBrandOpsAgent(
   input: BrandConsistencyInput,
+  agentName: BrandOpsAgentName,
 ): Promise<BrandConsistencyRunResult> {
   try {
     const result = await runOpenInfer({
-      prompt: buildBrandConsistencyPrompt(input),
+      prompt: buildAgentPrompt(input, agentName),
       imageBase64: input.assetBase64,
       imageMimeType: input.assetMimeType,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 1000,
       temperature: 0.2,
     });
 
@@ -155,12 +188,13 @@ export async function runBrandConsistencyAgent(
 
     const brandedOutput = {
       ...parsed,
+      agentName,
       __brand: "AgentOutput" as const,
     };
 
     if (!validateAgentOutput(brandedOutput)) {
       return {
-        output: fallbackBrandConsistencyOutput("Invalid JSON schema returned by model."),
+        output: fallbackAgentOutput(agentName, "Invalid JSON schema returned by model."),
         rawOutputPreview,
         latencyMs: result.latencyMs,
         status: "failed",
@@ -177,7 +211,8 @@ export async function runBrandConsistencyAgent(
     };
   } catch (error) {
     return {
-      output: fallbackBrandConsistencyOutput(
+      output: fallbackAgentOutput(
+        agentName,
         error instanceof Error ? error.message : "Unknown agent failure.",
       ),
       rawOutputPreview: "",
@@ -186,4 +221,35 @@ export async function runBrandConsistencyAgent(
       errorMessage: error instanceof Error ? error.message : "Unknown agent failure.",
     };
   }
+}
+
+export async function runBrandConsistencyAgent(
+  input: BrandConsistencyInput,
+): Promise<BrandConsistencyRunResult> {
+  return runBrandOpsAgent(input, "Brand Consistency");
+}
+
+export async function runAllBrandOpsAgents(
+  input: BrandConsistencyInput,
+): Promise<BrandConsistencyRunResult[]> {
+  const results = await Promise.allSettled(
+    BRANDOPS_AGENT_NAMES.map((agentName) => runBrandOpsAgent(input, agentName)),
+  );
+
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+
+    return {
+      output: fallbackAgentOutput(
+        BRANDOPS_AGENT_NAMES[index],
+        result.reason instanceof Error ? result.reason.message : "Unknown agent failure.",
+      ),
+      rawOutputPreview: "",
+      latencyMs: 0,
+      status: "failed",
+      errorMessage: result.reason instanceof Error ? result.reason.message : "Unknown agent failure.",
+    };
+  });
 }
