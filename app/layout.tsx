@@ -24,17 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
-        <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-black py-4 px-6 sticky top-0 z-10">
-          <div className="flex items-center justify-between max-w-3xl mx-auto">
-            <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">BrandOps</h1>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400 hidden sm:inline">
-              Multi-Agent Brand Compliance Engine
-            </span>
-          </div>
-        </header>
-        <main className="flex flex-1 w-full max-w-3xl mx-auto">{children}</main>
-      </body>
+      <body className="min-h-screen bg-black text-white">{children}</body>
     </html>
   );
 }
