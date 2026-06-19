@@ -53,7 +53,28 @@ Stop and report findings. Wait for human to confirm or adjust before Step 1.
 
 ## Step 1 — Create App Shell and UI Layout
 
-**Status:** `[ ]`
+**Status:** `[x]` **Complete** ✅
+
+### Completion Notes (Jun 18, 2026)
+- `app/layout.tsx`: Updated with BrandOps header + tagline in sticky `<header>` component. Removed default Next.js starter content. Added max-w-3xl container for main slot.
+- `app/page.tsx`: Replaced default logo/links with placeholder: "Upload form goes here — Step 2."
+- `app/review/[id]/page.tsx`: Created dynamic route directory and file with placeholder: "Results dashboard goes here — Step 9."
+- All routes render without TypeScript errors. Tailwind styles visible in browser output.
+
+### Files Changed (Step 1)
+| File | Action | Notes |
+|---|---|---|
+| `app/layout.tsx` | Modified | Added BrandOps header with tagline, sticky positioning, max-w-3xl container |
+| `app/page.tsx` | Replaced | Default Next.js content → placeholder text for Step 2 upload form |
+| `app/review/[id]/page.tsx` | Created | Dynamic route directory + file with results dashboard placeholder |
+
+### Acceptance Criteria Status: All Pass ✅
+- [x] `npm run dev` starts cleanly — Verified, no build errors
+- [x] `/` renders with BrandOps header and "Upload form goes here — Step 2." text
+- [x] `/review/test-id` returns HTTP/1.1 200 OK without 500 error
+- [x] No TypeScript errors in shell files — `npm run build` passes type check
+
+### Manual Test Results: Both pages render correctly ✅
 
 ### Goal
 Create the top-level layout with a consistent header/nav, set up global styles, and ensure the home page and review page routes exist and render without errors.
@@ -695,9 +716,9 @@ Do not implement this stretch feature at the expense of demo stability.
 
 | Step | Status | Completed At | Notes |
 |---|---|---|---|
-| Step 0 | | | |
-| Step 1 | | | |
-| Step 2 | | | |
+| Step 0 | [x] | Jun 18, 2026 17:35 | Repo scaffolded. Node v26/npm verified. All acceptance criteria pass. No extra packages installed. Original docs preserved. |
+| Step 1 | [x] | Jun 18, 2026 17:34 | App shell created with BrandOps header + tagline. Home page placeholder for upload form (Step 2). Review route placeholder for results dashboard (Step 9). No TypeScript errors. |
+| Step 2 | [ ] | | |
 | Step 3 | | | |
 | Step 4 | | | |
 | Step 5 | | | |
