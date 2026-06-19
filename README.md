@@ -1,66 +1,115 @@
-# BrandOps 🎯
+# BrandOps — Multi-Agent Brand Compliance Engine
 
-> Multi-Agent Brand Compliance Engine
+BrandOps is a hackathon demo product that reviews creative assets against brand guidelines using an OpenInfer-backed agent workflow.
 
----
+Companies upload brand context and a creative asset. BrandOps returns a brand compliance score, violations, suggested fixes, before/after guidance, inference trace, and persistent brand memory.
 
-## What is it?
+## Demo Flow
 
-BrandOps is an AI-powered **brand compliance reviewer** for creative teams.
+1. Upload brand context:
+   - Brand name
+   - Target audience
+   - Platform
+   - Campaign goal
+   - Brand guide text or file
 
-You give it your **brand guide** and a **creative asset** (ad, social post, image) — it tells you whether that asset is ready to publish.
+2. Upload a creative image.
 
-It **evaluates**. It does not generate.
+3. Run Brand Review.
 
----
+4. BrandOps returns:
+   - Overall score
+   - Brand Consistency agent verdict
+   - Violations
+   - Suggested fixes
+   - Before / After guidance
+   - Multi-agent inference trace
+   - Brand Memory Vault context on repeat reviews
 
-## The Problem
+## Core Features
 
-Creative teams publish assets that break their own brand rules, fail accessibility standards, or carry compliance risk — because review is slow, manual, and inconsistent. BrandOps is the QA gate between *"asset created"* and *"asset published."*
+### Live OpenInfer Agent
 
----
+BrandOps runs a real OpenInfer-backed Brand Consistency agent using the OpenInfer Responses API.
 
-## Target Audience
+The agent reviews the uploaded creative asset against the provided brand guide and campaign context.
 
-- In-house creative and marketing teams at SMBs or agencies
-- Solo designers managing brand standards
-- Freelancers doing client work
+### Inference Trace
 
----
+Each run stores and displays execution metadata:
 
-## How It Works
+- Agent name
+- Model
+- Latency
+- Status
+- Confidence
+- Demo cost marker
 
-1. Paste your brand guide + upload a creative image
-2. Fill in: brand name, audience, platform, campaign goal
-3. Click **Run Review**
-4. Four AI agents analyze the asset in parallel
-5. Get a readiness score, violations, and actionable fixes
+### Brand Memory Vault
 
----
+BrandOps remembers compact prior review context for the same brand and platform.
 
-## The Four Agents
+On future reviews, the agent receives prior issues and fixes so it does not treat every asset as a blank slate.
 
-| Agent | What It Checks |
-|---|---|
-| Brand Consistency | Colors, fonts, logo, tone vs. brand guide |
-| Accessibility | Contrast, text size, WCAG AA signals |
-| Visual Hierarchy | Layout, CTA placement, focal point |
-| Risk | Vague claims, superlatives, policy concerns |
+Stored memory includes:
 
----
+- Brand name
+- Platform
+- Target audience
+- Campaign goal
+- Prior score
+- Prior violations
+- Prior suggested fixes
+
+BrandOps does not store image base64, raw prompts, secrets, or full uploaded files in memory.
+
+## Architecture
+
+```txt
+User Input
+  -> Review Object
+  -> MongoDB Persistence
+  -> OpenInfer Brand Consistency Agent
+  -> Agent Output Validation
+  -> Agent Run Storage
+  -> Brand Memory Vault
+  -> Results Dashboard
+
+```
 
 ## Tech Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
-| Database | MongoDB |
-| AI API | OpenInfer Responses API |
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- MongoDB
+- OpenInfer Responses API
 
----
+## Important Routes
 
-## Built For
+- `POST /api/reviews`
+  - Creates a review object from form data and uploaded creative asset.
 
-OpenInfer Hackathon — 6–7 hour build window.
+- `POST /api/reviews/[id]/run`
+  - Runs the Brand Consistency agent.
+  - Retrieves Brand Memory Vault context.
+  - Saves agent output and memory.
+  - Returns score, violations, fixes, trace, and memory metadata.
+
+## Environment Variables
+
+Required locally and in deployment:
+
+```txt
+OPENINFER_API_KEY=...
+MONGODB_URI=...
+MONGODB_DB=...
+```
+
+Do not expose secrets in client code.
+
+## Hackathon Positioning
+
+BrandOps is not a generic AI image generator.
+
+It is agentic creative QA infrastructure for brand teams: a system that reviews assets, explains violations, recommends fixes, exposes inference traces, and remembers prior brand context.
