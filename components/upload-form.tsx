@@ -46,6 +46,7 @@ type RunResponse = {
   status: string;
   overallScore: number;
   agentRun: AgentRun;
+  agentRuns?: AgentRun[];
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -335,7 +336,13 @@ export default function UploadForm() {
         )}
       </form>
 
-      {result && (
+      {result && (() => {
+        const visibleAgentRuns = result.agentRuns?.length
+          ? result.agentRuns
+          : [result.agentRun];
+
+        return (
+
         <section className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100 shadow-2xl">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -438,7 +445,7 @@ export default function UploadForm() {
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-semibold">Multi-Agent Inference Trace</h3>
-              <p className="text-xs text-zinc-500">One live agent now; remaining agents shown as queued MVP extensions.</p>
+              <p className="text-xs text-zinc-500">All BrandOps agents ran live for this review.</p>
             </div>
 
             <div className="overflow-x-auto rounded-2xl border border-zinc-800">
@@ -454,71 +461,21 @@ export default function UploadForm() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
-                  {[
-                    {
-                      agent: result.agentRun.agentName,
-                      model: result.agentRun.model,
-                      latency: `${(result.agentRun.latencyMs / 1000).toFixed(1)}s`,
-                      cost: result.agentRun.estimatedCost,
-                      status: result.agentRun.status,
-                      confidence: `${(result.agentRun.confidence * 100).toFixed(0)}%`,
-                      live: true,
-                    },
-                    {
-                      agent: "Accessibility",
-                      model: "@oi/beta",
-                      latency: "queued",
-                      cost: "demo",
-                      status: "planned",
-                      confidence: "—",
-                      live: false,
-                    },
-                    {
-                      agent: "Legal / Risk",
-                      model: "@oi/beta",
-                      latency: "queued",
-                      cost: "demo",
-                      status: "planned",
-                      confidence: "—",
-                      live: false,
-                    },
-                    {
-                      agent: "Visual Hierarchy",
-                      model: "@oi/beta",
-                      latency: "queued",
-                      cost: "demo",
-                      status: "planned",
-                      confidence: "—",
-                      live: false,
-                    },
-                    {
-                      agent: "Audience Fit",
-                      model: "@oi/beta",
-                      latency: "queued",
-                      cost: "demo",
-                      status: "planned",
-                      confidence: "—",
-                      live: false,
-                    },
-                  ].map((row) => (
-                    <tr key={row.agent} className={row.live ? "bg-blue-500/5" : "bg-zinc-950/60"}>
-                      <td className="px-4 py-3 font-medium text-zinc-100">{row.agent}</td>
-                      <td className="px-4 py-3 text-zinc-400">{row.model}</td>
-                      <td className="px-4 py-3 text-zinc-400">{row.latency}</td>
-                      <td className="px-4 py-3 text-zinc-400">{row.cost}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-1 text-xs ${
-                          row.live
-                            ? "bg-emerald-500/10 text-emerald-300"
-                            : "bg-zinc-800 text-zinc-500"
-                        }`}>
-                          {row.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-zinc-400">{row.confidence}</td>
-                    </tr>
-                  ))}
-                </tbody>
+              {visibleAgentRuns.map((run) => (
+                <tr key={run.agentName} className="border-t border-zinc-800">
+                  <td className="px-4 py-4 font-medium text-zinc-100">{run.agentName}</td>
+                  <td className="px-4 py-4 text-zinc-400">{run.model}</td>
+                  <td className="px-4 py-4 text-zinc-400">{(run.latencyMs / 1000).toFixed(1)}s</td>
+                  <td className="px-4 py-4 text-zinc-400">{run.estimatedCost}</td>
+                  <td className="px-4 py-4">
+                    <span className={run.status === "completed" ? "rounded-full bg-emerald-500/10 px-3 py-1 text-emerald-300" : "rounded-full bg-red-500/10 px-3 py-1 text-red-300"}>
+                      {run.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-zinc-400">{(run.confidence * 100).toFixed(0)}%</td>
+                </tr>
+              ))}
+</tbody>
               </table>
             </div>
           </div>
@@ -529,7 +486,8 @@ export default function UploadForm() {
             </p>
           )}
         </section>
-      )}
+        );
+      })()}
     </div>
   );
 }
