@@ -33,12 +33,21 @@ export async function POST(request: NextRequest) {
 
     const rawPlatform = String(formData.get("platform") ?? "");
 
-    const metadata: CampaignMetadata = {
+    // Optional account metadata fields (not required, not looked up externally)
+    const accountType = String(formData.get("accountType") ?? undefined);
+    const accountId = String(formData.get("accountId") ?? undefined);
+    const channelId = String(formData.get("channelId") ?? undefined);
+
+    const metadata: CampaignMetadata & { accountType?: string; accountId?: string; channelId?: string } = {
       brandName: String(formData.get("brandName") ?? ""),
       targetAudience: String(formData.get("targetAudience") ?? ""),
       platform: normalizePlatform(rawPlatform),
       campaignGoal: String(formData.get("campaignGoal") ?? ""),
     };
+
+    if (accountType) metadata.accountType = accountType;
+    if (accountId) metadata.accountId = accountId;
+    if (channelId) metadata.channelId = channelId;
 
     if (!validateCampaignMetadata(metadata)) {
       return NextResponse.json(

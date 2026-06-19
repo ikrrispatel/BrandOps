@@ -10,6 +10,7 @@ export type BrandConsistencyInput = {
   brandGuidePreview: string;
   assetBase64: string;
   assetMimeType: string;
+  brandMemorySummary?: string;
 };
 
 export type BrandConsistencyRunResult = {
@@ -80,6 +81,11 @@ function buildBrandConsistencyPrompt(input: BrandConsistencyInput): string {
 You are the Brand Consistency agent for BrandOps.
 
 Review the uploaded creative asset against the provided brand context. Evaluate whether the asset matches the brand identity, target audience, platform, and campaign goal.
+
+Brand Memory Vault:
+${input.brandMemorySummary || "No prior memory found for this brand/platform."}
+
+Use this memory to avoid treating the asset as a blank slate. If memory mentions recurring violations, check whether they appear again. Do not invent account IDs, channel IDs, handles, or private metadata.
 
 Brand context:
 Brand name: ${input.brandName}

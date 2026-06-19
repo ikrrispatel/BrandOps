@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 import { runBrandConsistencyAgent } from "@/lib/agents";
 import { getDb } from "@/lib/mongodb";
+import { getBrandMemoryContext, saveBrandMemory } from "@/lib/brand-memory";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -53,14 +54,25 @@ export async function POST(
       { $set: { status: "running" } },
     );
 
+    // Compute brand name and platform for memory lookup
+    const computedBrandName = String(review.brandName ?? "");
+    const computedPlatform = String(review.originalPlatform ?? review.platform ?? "");
+
+    // Get prior memory context
+    const memoryContext = await getBrandMemoryContext(db, {
+      brandName: computedBrandName,
+      platform: computedPlatform,
+    });
+
     const agentResult = await runBrandConsistencyAgent({
-      brandName: String(review.brandName ?? ""),
+      brandName: computedBrandName,
       targetAudience: String(review.targetAudience ?? ""),
-      platform: String(review.originalPlatform ?? review.platform ?? ""),
+      platform: computedPlatform,
       campaignGoal: String(review.campaignGoal ?? ""),
       brandGuidePreview: String(review.brandGuidePreview ?? ""),
       assetBase64: body.assetBase64,
       assetMimeType: body.assetMimeType,
+      brandMemorySummary: memoryContext.summary,
     });
 
     const agentRun = {
@@ -83,6 +95,31 @@ export async function POST(
 
     await db.collection("agentRuns").insertOne(agentRun);
 
+    // Save memory after agent run completes
+    const memoryScore = Number(agentResult.output.score ?? 0);
+    const memoryConfidence = Number(agentResult.output.confidence ?? 0.5);
+    const memoryViolations = Array.isArray(agentResult.output.violations)
+      ? agentResult.output.violations.map((violation) => ({
+          title: String(violation.title ?? ""),
+        }))
+      : [];
+    const memorySuggestedFixes = Array.isArray(agentResult.output.suggestedFixes)
+      ? agentResult.output.suggestedFixes.map((suggestedFix) => ({
+          fix: String(suggestedFix.fix ?? ""),
+        }))
+      : [];
+
+    await saveBrandMemory(db, {
+      brandName: computedBrandName,
+      platform: computedPlatform,
+      targetAudience: String(review.targetAudience ?? ""),
+      campaignGoal: String(review.campaignGoal ?? ""),
+      score: Number.isFinite(memoryScore) ? memoryScore : 0,
+      confidence: Number.isFinite(memoryConfidence) ? memoryConfidence : 0.5,
+      violations: agentResult.status === "failed" ? [] : memoryViolations,
+      suggestedFixes: agentResult.status === "completed" ? memorySuggestedFixes : [],
+    });
+
     const finalStatus = "completed";
     const overallScore = agentResult.output.score;
 
@@ -102,6 +139,13 @@ export async function POST(
       status: finalStatus,
       overallScore,
       agentRun,
+      memoryUsed: {
+        used: memoryContext.used,
+        count: memoryContext.count,
+        summary: memoryContext.summary,
+        recurringViolations: memoryContext.recurringViolations,
+        lastScore: memoryContext.lastScore,
+      },
     });
   } catch (error) {
     console.error(
