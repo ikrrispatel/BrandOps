@@ -143,7 +143,16 @@ export async function runBrandConsistencyAgent(
     const rawOutputPreview = result.text.slice(0, 500);
     const parsed = extractJsonObject(result.text);
 
-    if (!validateAgentOutput(parsed)) {
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Model output JSON was not an object");
+    }
+
+    const brandedOutput = {
+      ...parsed,
+      __brand: "AgentOutput" as const,
+    };
+
+    if (!validateAgentOutput(brandedOutput)) {
       return {
         output: fallbackBrandConsistencyOutput("Invalid JSON schema returned by model."),
         rawOutputPreview,
@@ -154,7 +163,7 @@ export async function runBrandConsistencyAgent(
     }
 
     return {
-      output: parsed as AgentOutput,
+      output: brandedOutput as AgentOutput,
       rawOutputPreview,
       latencyMs: result.latencyMs,
       status: "completed",
