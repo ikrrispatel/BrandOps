@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
+  --background: #070707;
   --foreground: #ededed;
 }
 
@@ -21,6 +21,10 @@ body {
   min-height: 100%;
   background: var(--background);
   color: var(--foreground);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {

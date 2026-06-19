@@ -30,6 +30,8 @@ function normalizePlatform(value: string): CampaignMetadata["platform"] {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
+    const workspaceName = String(formData.get("workspaceName") ?? "BrandOps Workspace");
+    const workspaceId = String(formData.get("workspaceId") ?? "demo-workspace-01");
 
     const rawPlatform = String(formData.get("platform") ?? "");
 
@@ -91,6 +93,8 @@ export async function POST(request: NextRequest) {
     const db = await getDb();
 
     const insertResult = await db.collection("reviews").insertOne({
+      workspaceId,
+      workspaceName,
       ...metadata,
       originalPlatform: rawPlatform,
       brandGuidePreview: brandGuideText.slice(0, 500),
