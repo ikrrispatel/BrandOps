@@ -25,3 +25,4 @@ export const validateCampaignMetadata = (meta: Partial<CampaignMetadata>): meta 
 export const validateAgentOutput = (raw: unknown): raw is Record<string, unknown> => {
   return typeof raw === "object" && raw !== null && "__brand" in raw;
 };
+
