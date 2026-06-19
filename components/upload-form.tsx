@@ -37,8 +37,9 @@ export default function UploadForm() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const img = new Image();
-      img.src = ev.target?.result as string;
+      if (!document || !ev.target?.result) return;
+      const img = document.createElement("img") as HTMLImageElement;
+      img.src = ev.target.result as string;
       img.onload = () => setImagePreview(img);
     };
     reader.readAsDataURL(file);
