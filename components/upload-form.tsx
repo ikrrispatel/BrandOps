@@ -264,9 +264,9 @@ export default function UploadForm() {
             value={brandGuide}
             onChange={(event) => setBrandGuide(event.target.value)}
             required
-            rows={4}
-            className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Brand voice: technical, premium, infrastructure-focused, concise, confident. Visual style: dark, sharp, modern, high contrast."
+            rows={6}
+            className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Brand voice, visual style, tone rules, audience, and words to avoid."
           />
         </div>
 
@@ -336,44 +336,75 @@ export default function UploadForm() {
       </form>
 
       {result && (
-        <section className="space-y-5 rounded-xl border bg-white p-5 text-black shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <section className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100 shadow-2xl">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500">BrandOps Review</p>
-              <h2 className="text-2xl font-semibold">Overall Score: {result.overallScore}/100</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-400">
+                BrandOps Review
+              </p>
+              <h2 className="mt-2 text-3xl font-bold">
+                Overall Score: {result.overallScore}/100
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+                Agentic brand compliance review with model, latency, confidence, and execution status.
+              </p>
             </div>
-            <div className="rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white">
+
+            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300">
               {result.status}
             </div>
           </div>
 
-          <div className="rounded-lg border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">{result.agentRun.agentName}</h3>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm">
-                Score {result.agentRun.score}/100
-              </span>
+          <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+              <p className="text-xs uppercase tracking-wide text-zinc-500">Primary Agent</p>
+              <div className="mt-4 flex h-28 w-28 items-center justify-center rounded-full border-8 border-blue-500/30 bg-blue-500/10">
+                <span className="text-3xl font-bold text-blue-300">{result.agentRun.score}</span>
+              </div>
+              <p className="mt-4 text-sm text-zinc-400">
+                Confidence {(result.agentRun.confidence * 100).toFixed(0)}%
+              </p>
             </div>
-            <p className="mt-3 text-sm leading-6 text-gray-700">{result.agentRun.summary}</p>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-semibold">{result.agentRun.agentName}</h3>
+                  <p className="text-sm text-zinc-500">Live OpenInfer-backed agent</p>
+                </div>
+                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-300">
+                  @oi/beta
+                </span>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-zinc-300">{result.agentRun.summary}</p>
+            </div>
           </div>
 
           <div>
-            <h3 className="mb-2 text-lg font-semibold">Violations</h3>
+            <h3 className="mb-3 text-lg font-semibold">Violations</h3>
             <div className="space-y-3">
               {result.agentRun.violations.map((violation) => (
-                <div key={violation.title} className="rounded-lg border p-4">
+                <div key={violation.title} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="font-semibold">{violation.title}</h4>
-                    <span className="rounded-full bg-red-50 px-2 py-1 text-xs uppercase text-red-700">
+                    <h4 className="font-semibold text-zinc-100">{violation.title}</h4>
+                    <span className={`rounded-full px-2 py-1 text-xs uppercase ${
+                      violation.severity === "high"
+                        ? "bg-red-500/10 text-red-300"
+                        : violation.severity === "medium"
+                          ? "bg-yellow-500/10 text-yellow-300"
+                          : "bg-zinc-700 text-zinc-300"
+                    }`}>
                       {violation.severity}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-gray-700">{violation.evidence}</p>
-                  <p className="mt-2 text-sm text-gray-600">
-                    <span className="font-medium">Why it matters:</span> {violation.whyItMatters}
+                  <p className="mt-3 text-sm leading-6 text-zinc-300">{violation.evidence}</p>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    <span className="font-medium text-zinc-200">Why it matters:</span>{" "}
+                    {violation.whyItMatters}
                   </p>
-                  <p className="mt-2 text-sm text-gray-600">
-                    <span className="font-medium">Suggested fix:</span> {violation.suggestedFix}
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    <span className="font-medium text-zinc-200">Suggested fix:</span>{" "}
+                    {violation.suggestedFix}
                   </p>
                 </div>
               ))}
@@ -381,35 +412,38 @@ export default function UploadForm() {
           </div>
 
           <div>
-            <h3 className="mb-2 text-lg font-semibold">Suggested Fixes</h3>
-            <div className="space-y-2">
+            <h3 className="mb-3 text-lg font-semibold">Suggested Fixes</h3>
+            <div className="grid gap-3 md:grid-cols-2">
               {result.agentRun.suggestedFixes.map((fix) => (
-                <div key={`${fix.priority}-${fix.fix}`} className="rounded-lg border p-4">
-                  <p className="font-medium">
-                    Priority {fix.priority}: {fix.fix}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">{fix.expectedImpact}</p>
+                <div key={`${fix.priority}-${fix.fix}`} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+                  <p className="text-sm font-semibold text-blue-300">Priority {fix.priority}</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-200">{fix.fix}</p>
+                  <p className="mt-3 text-sm leading-6 text-zinc-500">{fix.expectedImpact}</p>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border p-4">
-              <h3 className="font-semibold">Before</h3>
-              <p className="mt-2 text-sm text-gray-700">{result.agentRun.beforeAfter.before}</p>
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5">
+              <h3 className="font-semibold text-zinc-100">Before</h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">{result.agentRun.beforeAfter.before}</p>
             </div>
-            <div className="rounded-lg border p-4">
-              <h3 className="font-semibold">After</h3>
-              <p className="mt-2 text-sm text-gray-700">{result.agentRun.beforeAfter.after}</p>
+            <div className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5">
+              <h3 className="font-semibold text-blue-200">After</h3>
+              <p className="mt-3 text-sm leading-6 text-blue-100/80">{result.agentRun.beforeAfter.after}</p>
             </div>
           </div>
 
           <div>
-            <h3 className="mb-2 text-lg font-semibold">Inference Trace</h3>
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[620px] text-left text-sm">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Multi-Agent Inference Trace</h3>
+              <p className="text-xs text-zinc-500">One live agent now; remaining agents shown as queued MVP extensions.</p>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-zinc-800">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="bg-zinc-900 text-xs uppercase tracking-wide text-zinc-500">
                   <tr>
                     <th className="px-4 py-3">Agent</th>
                     <th className="px-4 py-3">Model</th>
@@ -419,24 +453,78 @@ export default function UploadForm() {
                     <th className="px-4 py-3">Confidence</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td className="px-4 py-3">{result.agentRun.agentName}</td>
-                    <td className="px-4 py-3">{result.agentRun.model}</td>
-                    <td className="px-4 py-3">{(result.agentRun.latencyMs / 1000).toFixed(1)}s</td>
-                    <td className="px-4 py-3">{result.agentRun.estimatedCost}</td>
-                    <td className="px-4 py-3">{result.agentRun.status}</td>
-                    <td className="px-4 py-3">
-                      {(result.agentRun.confidence * 100).toFixed(0)}%
-                    </td>
-                  </tr>
+                <tbody className="divide-y divide-zinc-800">
+                  {[
+                    {
+                      agent: result.agentRun.agentName,
+                      model: result.agentRun.model,
+                      latency: `${(result.agentRun.latencyMs / 1000).toFixed(1)}s`,
+                      cost: result.agentRun.estimatedCost,
+                      status: result.agentRun.status,
+                      confidence: `${(result.agentRun.confidence * 100).toFixed(0)}%`,
+                      live: true,
+                    },
+                    {
+                      agent: "Accessibility",
+                      model: "@oi/beta",
+                      latency: "queued",
+                      cost: "demo",
+                      status: "planned",
+                      confidence: "—",
+                      live: false,
+                    },
+                    {
+                      agent: "Legal / Risk",
+                      model: "@oi/beta",
+                      latency: "queued",
+                      cost: "demo",
+                      status: "planned",
+                      confidence: "—",
+                      live: false,
+                    },
+                    {
+                      agent: "Visual Hierarchy",
+                      model: "@oi/beta",
+                      latency: "queued",
+                      cost: "demo",
+                      status: "planned",
+                      confidence: "—",
+                      live: false,
+                    },
+                    {
+                      agent: "Audience Fit",
+                      model: "@oi/beta",
+                      latency: "queued",
+                      cost: "demo",
+                      status: "planned",
+                      confidence: "—",
+                      live: false,
+                    },
+                  ].map((row) => (
+                    <tr key={row.agent} className={row.live ? "bg-blue-500/5" : "bg-zinc-950/60"}>
+                      <td className="px-4 py-3 font-medium text-zinc-100">{row.agent}</td>
+                      <td className="px-4 py-3 text-zinc-400">{row.model}</td>
+                      <td className="px-4 py-3 text-zinc-400">{row.latency}</td>
+                      <td className="px-4 py-3 text-zinc-400">{row.cost}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-1 text-xs ${
+                          row.live
+                            ? "bg-emerald-500/10 text-emerald-300"
+                            : "bg-zinc-800 text-zinc-500"
+                        }`}>
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">{row.confidence}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </div>
 
           {result.agentRun.errorMessage && (
-            <p className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800">
+            <p className="rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-200">
               Agent warning: {result.agentRun.errorMessage}
             </p>
           )}
