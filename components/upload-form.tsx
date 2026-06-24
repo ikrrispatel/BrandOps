@@ -329,7 +329,6 @@ export default function UploadForm() {
   };
 
   return (
-<<<<<<< HEAD
     <form
       onSubmit={handleSubmit}
       className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#101010]/90 shadow-[0_50px_180px_rgba(0,0,0,0.65)] backdrop-blur-2xl"
@@ -383,8 +382,8 @@ export default function UploadForm() {
                 type="button"
                 onClick={() => applyDemoContext(context)}
                 className={`rounded-full border px-3 py-2 text-xs transition ${brandName === context.brandName
-                    ? "border-blue-300/70 bg-blue-500/15 text-blue-100"
-                    : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/25 hover:text-white"
+                  ? "border-blue-300/70 bg-blue-500/15 text-blue-100"
+                  : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/25 hover:text-white"
                   }`}
               >
                 {context.label}
@@ -550,8 +549,8 @@ export default function UploadForm() {
                         type="button"
                         onClick={() => setSelectedAgentName(run.agentName)}
                         className={`grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-xs transition ${selectedAgent?.agentName === run.agentName
-                            ? "border-blue-300/60 bg-blue-500/10"
-                            : "border-white/10 bg-black/30 hover:border-white/20"
+                          ? "border-blue-300/60 bg-blue-500/10"
+                          : "border-white/10 bg-black/30 hover:border-white/20"
                           }`}
                       >
                         <div className="min-w-0">
@@ -596,8 +595,8 @@ export default function UploadForm() {
                       type="button"
                       onClick={() => run && setSelectedAgentName(run.agentName)}
                       className={`w-full rounded-2xl border p-4 text-left transition ${selectedAgent?.agentName === name
-                          ? "border-blue-300/50 bg-blue-500/10"
-                          : "border-white/10 bg-white/[0.025] hover:border-white/20"
+                        ? "border-blue-300/50 bg-blue-500/10"
+                        : "border-white/10 bg-white/[0.025] hover:border-white/20"
                         }`}
                     >
                       <div className="flex items-center justify-between">
