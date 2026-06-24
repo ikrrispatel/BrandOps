@@ -157,6 +157,68 @@ async function readError(response: Response) {
   return text || `${response.status} ${response.statusText}`;
 }
 
+async function compressImage(
+  file: File,
+  maxWidth = 1024,
+  maxHeight = 1024,
+  quality = 0.85,
+): Promise<Blob> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+
+    reader.readAsDataURL(file);
+
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.src = event.target?.result as string;
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob ?? file);
+          },
+          "image/jpeg",
+          quality,
+        );
+      };
+
+      img.onerror = () => {
+        resolve(file);
+      };
+    };
+
+    reader.onerror = () => {
+      resolve(file);
+    };
+  });
+}
+
 function severityClass(severity: Violation["severity"]) {
   if (severity === "high") {
     return "bg-red-500/10 text-red-200 ring-red-400/20";
@@ -275,6 +337,16 @@ export default function UploadForm() {
     setSelectedAgentName("Brand Consistency");
 
     try {
+      let assetToUpload: Blob | File = creativeAsset;
+
+      if (creativeAsset.size > 500 * 1024) {
+        try {
+          assetToUpload = await compressImage(creativeAsset);
+        } catch (error) {
+          console.warn("Failed to compress image, sending original", error);
+        }
+      }
+
       const formData = new FormData();
       formData.append("workspaceName", workspaceName);
       formData.append("workspaceId", "demo-workspace-01");
@@ -283,7 +355,7 @@ export default function UploadForm() {
       formData.append("platform", platform);
       formData.append("campaignGoal", campaignGoal);
       formData.append("brandGuideText", brandGuide);
-      formData.append("creativeAsset", creativeAsset);
+      formData.append("creativeAsset", assetToUpload, creativeAsset.name);
 
       if (brandGuideFile) {
         formData.append("brandGuideFile", brandGuideFile);
@@ -337,7 +409,9 @@ export default function UploadForm() {
 
       <div className="relative z-10 flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-white/35">Current review</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+            Current review
+          </p>
           <h2 className="mt-1 text-lg font-medium text-white">
             {brandName ? brandName : "No brand selected"}
             <span className="text-white/35"> / </span>
@@ -346,7 +420,9 @@ export default function UploadForm() {
         </div>
 
         <div className="text-right">
-          <p className="text-xs uppercase tracking-[0.24em] text-white/35">Workspace</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-white/35">
+            Workspace
+          </p>
           <p className="mt-1 text-sm text-white/70">{workspaceName}</p>
         </div>
       </div>
@@ -355,8 +431,12 @@ export default function UploadForm() {
         <section className="border-b border-white/10 p-6 lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.36em] text-white/35">Brand input</p>
-              <h2 className="mt-2 text-2xl font-medium tracking-tight">Review setup</h2>
+              <p className="text-xs uppercase tracking-[0.36em] text-white/35">
+                Brand input
+              </p>
+              <h2 className="mt-2 text-2xl font-medium tracking-tight">
+                Review setup
+              </h2>
             </div>
 
             <label
@@ -382,8 +462,8 @@ export default function UploadForm() {
                 type="button"
                 onClick={() => applyDemoContext(context)}
                 className={`rounded-full border px-3 py-2 text-xs transition ${brandName === context.brandName
-                  ? "border-blue-300/70 bg-blue-500/15 text-blue-100"
-                  : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/25 hover:text-white"
+                    ? "border-blue-300/70 bg-blue-500/15 text-blue-100"
+                    : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/25 hover:text-white"
                   }`}
               >
                 {context.label}
@@ -392,7 +472,9 @@ export default function UploadForm() {
           </div>
 
           <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
-            <p className="text-xs uppercase tracking-[0.22em] text-white/35">Workspace</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+              Workspace
+            </p>
             <input
               value={workspaceName}
               onChange={(event) => setWorkspaceName(event.target.value)}
@@ -458,9 +540,14 @@ export default function UploadForm() {
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.36em] text-white/35">Inspection stage</p>
-                  <h2 className="mt-2 text-2xl font-medium tracking-tight">Creative asset</h2>
+                  <p className="text-xs uppercase tracking-[0.36em] text-white/35">
+                    Inspection stage
+                  </p>
+                  <h2 className="mt-2 text-2xl font-medium tracking-tight">
+                    Creative asset
+                  </h2>
                 </div>
+
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/45">
                   PNG · JPG · WebP
                 </span>
@@ -489,8 +576,12 @@ export default function UploadForm() {
                     <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.5rem] border border-white/10 bg-white/[0.04] text-3xl text-zinc-500 transition group-hover:border-blue-400/60 group-hover:text-blue-200">
                       +
                     </div>
-                    <p className="mt-6 text-xl font-medium text-white">Drop campaign asset</p>
-                    <p className="mt-2 text-sm text-zinc-600">or click to select a creative file</p>
+                    <p className="mt-6 text-xl font-medium text-white">
+                      Drop campaign asset
+                    </p>
+                    <p className="mt-2 text-sm text-zinc-600">
+                      or click to select a creative file
+                    </p>
                   </div>
                 )}
 
@@ -522,6 +613,7 @@ export default function UploadForm() {
                       {creativeAsset.name} · {(creativeAsset.size / 1024).toFixed(1)} KB
                     </p>
                   )}
+
                   {fileError && <p className="text-sm text-red-300">{fileError}</p>}
                   {runError && <p className="mt-2 text-sm text-red-300">{runError}</p>}
                 </div>
@@ -536,10 +628,17 @@ export default function UploadForm() {
               </div>
 
               {result && (
-                <div id="trace" className="scroll-mt-24 mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-4">
+                <div
+                  id="trace"
+                  className="scroll-mt-24 mt-5 rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-4"
+                >
                   <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">Inference trace</p>
-                    <p className="text-xs text-emerald-300">All agents completed live</p>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+                      Inference trace
+                    </p>
+                    <p className="text-xs text-emerald-300">
+                      All agents completed live
+                    </p>
                   </div>
 
                   <div className="mt-3 grid gap-2">
@@ -549,14 +648,17 @@ export default function UploadForm() {
                         type="button"
                         onClick={() => setSelectedAgentName(run.agentName)}
                         className={`grid grid-cols-[1fr_auto] items-center gap-3 rounded-2xl border px-4 py-3 text-left text-xs transition ${selectedAgent?.agentName === run.agentName
-                          ? "border-blue-300/60 bg-blue-500/10"
-                          : "border-white/10 bg-black/30 hover:border-white/20"
+                            ? "border-blue-300/60 bg-blue-500/10"
+                            : "border-white/10 bg-black/30 hover:border-white/20"
                           }`}
                       >
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-white">{run.agentName}</p>
+                          <p className="truncate font-medium text-white">
+                            {run.agentName}
+                          </p>
                           <p className="mt-1 text-white/35">
-                            {run.model} · {(run.latencyMs / 1000).toFixed(1)}s · {(run.confidence * 100).toFixed(0)}%
+                            {run.model} · {(run.latencyMs / 1000).toFixed(1)}s ·{" "}
+                            {(run.confidence * 100).toFixed(0)}%
                           </p>
                         </div>
 
@@ -570,23 +672,35 @@ export default function UploadForm() {
               )}
             </div>
 
-            <aside id="agents" className="scroll-mt-24 rounded-[1.8rem] border border-white/10 bg-black/35 p-5">
+            <aside
+              id="agents"
+              className="scroll-mt-24 rounded-[1.8rem] border border-white/10 bg-black/35 p-5"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.36em] text-white/35">Verdict</p>
-                  <h2 className="mt-2 text-2xl font-medium tracking-tight">Agent fleet</h2>
+                  <p className="text-xs uppercase tracking-[0.36em] text-white/35">
+                    Verdict
+                  </p>
+                  <h2 className="mt-2 text-2xl font-medium tracking-tight">
+                    Agent fleet
+                  </h2>
                 </div>
 
                 {displayScore !== null && (
                   <div className="text-right">
-                    <p className="text-6xl font-medium tracking-[-0.08em]">{displayScore}</p>
+                    <p className="text-6xl font-medium tracking-[-0.08em]">
+                      {displayScore}
+                    </p>
                     <p className="-mt-2 text-xs text-white/35">/100</p>
                   </div>
                 )}
               </div>
 
               <div className="mt-6 space-y-2">
-                {(orderedAgentRuns.length ? orderedAgentRuns : AGENT_ORDER.map(() => null)).map((run, index) => {
+                {(orderedAgentRuns.length
+                  ? orderedAgentRuns
+                  : AGENT_ORDER.map(() => null)
+                ).map((run, index) => {
                   const name = run?.agentName ?? AGENT_ORDER[index];
 
                   return (
@@ -595,14 +709,19 @@ export default function UploadForm() {
                       type="button"
                       onClick={() => run && setSelectedAgentName(run.agentName)}
                       className={`w-full rounded-2xl border p-4 text-left transition ${selectedAgent?.agentName === name
-                        ? "border-blue-300/50 bg-blue-500/10"
-                        : "border-white/10 bg-white/[0.025] hover:border-white/20"
+                          ? "border-blue-300/50 bg-blue-500/10"
+                          : "border-white/10 bg-white/[0.025] hover:border-white/20"
                         }`}
                     >
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium">{name}</p>
+
                         {run ? (
-                          <span className={`rounded-full px-2.5 py-1 text-[10px] uppercase ring-1 ${statusClass(run.status)}`}>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[10px] uppercase ring-1 ${statusClass(
+                              run.status,
+                            )}`}
+                          >
                             {run.status}
                           </span>
                         ) : (
@@ -619,7 +738,9 @@ export default function UploadForm() {
                           <span>{(run.latencyMs / 1000).toFixed(1)}s</span>
                         </div>
                       ) : (
-                        <p className="mt-3 text-xs text-white/35">Waiting for review</p>
+                        <p className="mt-3 text-xs text-white/35">
+                          Waiting for review
+                        </p>
                       )}
                     </button>
                   );
@@ -627,11 +748,18 @@ export default function UploadForm() {
               </div>
 
               {result?.memoryUsed && (
-                <div id="memory" className="scroll-mt-24 mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+                <div
+                  id="memory"
+                  className="scroll-mt-24 mt-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4"
+                >
                   <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.22em] text-white/35">MongoDB Memory Vault</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+                      MongoDB Memory Vault
+                    </p>
                     <span className="text-xs text-blue-200">
-                      {result.memoryUsed.used ? `${result.memoryUsed.count} prior` : "new"}
+                      {result.memoryUsed.used
+                        ? `${result.memoryUsed.count} prior`
+                        : "new"}
                     </span>
                   </div>
                   <p className="mt-3 text-xs leading-5 text-white/48">
@@ -645,26 +773,46 @@ export default function UploadForm() {
               {selectedAgent && (
                 <div className="mt-4 space-y-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-white/35">Executive verdict</p>
-                    <p className="mt-3 line-clamp-6 text-sm leading-6 text-white/70">{selectedAgent.summary}</p>
+                    <p className="text-xs uppercase tracking-[0.22em] text-white/35">
+                      Executive verdict
+                    </p>
+                    <p className="mt-3 line-clamp-6 text-sm leading-6 text-white/70">
+                      {selectedAgent.summary}
+                    </p>
                   </div>
 
                   {selectedAgent.violations.slice(0, 2).map((violation) => (
-                    <div key={`${selectedAgent.agentName}-${violation.title}`} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+                    <div
+                      key={`${selectedAgent.agentName}-${violation.title}`}
+                      className="rounded-2xl border border-white/10 bg-white/[0.025] p-4"
+                    >
                       <div className="flex items-center justify-between gap-3">
                         <p className="text-sm font-medium">{violation.title}</p>
-                        <span className={`rounded-full px-2.5 py-1 text-[10px] uppercase ring-1 ${severityClass(violation.severity)}`}>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-[10px] uppercase ring-1 ${severityClass(
+                            violation.severity,
+                          )}`}
+                        >
                           {violation.severity}
                         </span>
                       </div>
-                      <p className="mt-3 line-clamp-3 text-xs leading-5 text-white/42">{violation.evidence}</p>
-                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-blue-100/70">{violation.suggestedFix}</p>
+                      <p className="mt-3 line-clamp-3 text-xs leading-5 text-white/42">
+                        {violation.evidence}
+                      </p>
+                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-blue-100/70">
+                        {violation.suggestedFix}
+                      </p>
                     </div>
                   ))}
 
                   {selectedAgent.suggestedFixes.slice(0, 1).map((fix) => (
-                    <div key={`${selectedAgent.agentName}-${fix.priority}-${fix.fix}`} className="rounded-2xl border border-blue-300/15 bg-blue-500/[0.055] p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-blue-300">Priority fix</p>
+                    <div
+                      key={`${selectedAgent.agentName}-${fix.priority}-${fix.fix}`}
+                      className="rounded-2xl border border-blue-300/15 bg-blue-500/[0.055] p-4"
+                    >
+                      <p className="text-xs uppercase tracking-[0.2em] text-blue-300">
+                        Priority fix
+                      </p>
                       <p className="mt-2 text-sm leading-6">{fix.fix}</p>
                     </div>
                   ))}
